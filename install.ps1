@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$LobbyVersion = '1.5.1'
+$LobbyVersion = '1.5.2'
 # The x64 build also runs under Windows on ARM's x64 emulation.
 $LobbyAsset = "runlobby-$LobbyVersion-win32-x64.zip"
 $LobbyBase = "https://github.com/blankmeta/runlobby/releases/download/v$LobbyVersion"

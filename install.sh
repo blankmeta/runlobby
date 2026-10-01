@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-version=1.5.1
+version=1.5.2
 case "$(uname -s)" in
   Darwin) lobby_os=darwin ;;
   Linux) lobby_os=linux ;;
