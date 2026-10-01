@@ -12,6 +12,8 @@ def main(args=None):
         from .infrastructure.providers.statusline import main as statusline
         return statusline()
     try:
+        from .infrastructure.processes import prepare_file_limit
+        prepare_file_limit()
         from .infrastructure.platforms import current_platform
         return CLI(build_application(), Console(terminal=current_platform().terminal)).run(arguments)
     except SwitchError as exc:

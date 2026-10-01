@@ -50,13 +50,24 @@ class PosixPty:
 
     def close(self):
         import time
+        if self.fd is None:
+            return
         try: os.close(self.fd)
         except OSError: pass
-        deadline = time.monotonic() + .2
-        while self.poll() is None and time.monotonic() < deadline: time.sleep(.01)
+        self.fd = None
+        for sig, timeout in ((None, .2), (signal.SIGHUP, .5), (signal.SIGTERM, .5)):
+            if self.poll() is not None:
+                return
+            if sig is not None:
+                try: os.killpg(self.pid, sig)
+                except ProcessLookupError: pass
+            deadline = time.monotonic() + timeout
+            while self.poll() is None and time.monotonic() < deadline: time.sleep(.01)
         if self.poll() is None:
-            try: os.kill(self.pid, signal.SIGHUP)
+            try: os.killpg(self.pid, signal.SIGKILL)
             except ProcessLookupError: pass
+            _, status = os.waitpid(self.pid, 0)
+            self.returncode = os.waitstatus_to_exitcode(status)
 
 
 class WindowsPty:

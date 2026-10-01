@@ -23,6 +23,47 @@ def receive(process, needle, timeout=12):
 
 
 class NativePanelTests(unittest.TestCase):
+    @unittest.skipIf(os.name == 'nt', 'POSIX PTY cleanup')
+    def test_close_reaps_a_child_that_ignores_hangup_and_terminate(self):
+        script = "import signal,time;signal.signal(signal.SIGHUP,signal.SIG_IGN);signal.signal(signal.SIGTERM,signal.SIG_IGN);print('READY',flush=True);time.sleep(60)"
+        process = spawn_terminal([sys.executable, '-c', script], dict(os.environ), 25, 90)
+        try:
+            receive(process, b'READY')
+            process.close()
+            self.assertIsNotNone(process.returncode)
+            with self.assertRaises(ChildProcessError): os.waitpid(process.pid, os.WNOHANG)
+        finally:
+            process.close()
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX descriptors only')
+    def test_repeated_pty_cleanup_does_not_close_a_reused_descriptor(self):
+        process = spawn_terminal([sys.executable, '-c', "print('READY',flush=True)"], dict(os.environ), 25, 90)
+        try:
+            receive(process, b'READY')
+            old_fd = process.fd
+            process.close()
+            with open(os.devnull, 'rb') as handle:
+                if handle.fileno() != old_fd:
+                    os.dup2(handle.fileno(), old_fd)
+                    self.addCleanup(os.close, old_fd)
+                process.close()
+                os.fstat(old_fd)
+        finally:
+            process.close()
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX descriptors only')
+    def test_repeated_launch_and_close_does_not_accumulate_descriptors(self):
+        import psutil
+        current = psutil.Process()
+        before = current.num_fds()
+        for _ in range(12):
+            process = spawn_terminal([sys.executable, '-c', "print('READY',flush=True)"], dict(os.environ), 25, 90)
+            try:
+                receive(process, b'READY')
+            finally:
+                process.close()
+        self.assertEqual(current.num_fds(), before)
+
     def test_account_lease_outlives_the_wrapper_scope(self):
         from codex_switch.infrastructure.platforms import current_platform
         locks = current_platform().locks

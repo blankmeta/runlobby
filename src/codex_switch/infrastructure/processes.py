@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 import shutil
 import subprocess
 import sys
@@ -64,13 +65,53 @@ def command_for(binary, *args):
     raise SwitchError("This configured .py tool needs Python. Install Python or select a native executable.")
 
 
+@lru_cache(maxsize=16)
+def codex_supports_no_daemon(binary):
+    if not Path(binary).is_file():
+        return False
+    try:
+        result = subprocess.run(command_for(binary, "--help"), stdin=subprocess.DEVNULL,
+                                capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        raise SwitchError("Could not check Codex launch options. Check the installation: runlobby doctor") from None
+    if result.returncode:
+        raise SwitchError("Could not check Codex launch options. Check the installation: runlobby doctor")
+    return "--no-daemon" in result.stdout
+
+
+def codex_launch_command(binary, args):
+    # A shared server retains its own account and MCP processes after TUI exit.
+    for arg in args:
+        if arg == "--":
+            break
+        if arg == "--remote" or arg.startswith("--remote="):
+            raise SwitchError("Remote Codex servers cannot use the selected account. Launch remote Codex directly.")
+    if codex_supports_no_daemon(binary):
+        return command_for(binary, "--no-daemon", *args)
+    # Older Codex embeds its server whenever CLI config overrides are present.
+    return command_for(binary, "-c", 'cli_auth_credentials_store="file"', *args)
+
+
+def prepare_file_limit():
+    if os.name == "nt":
+        return
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    target = 4096 if hard == resource.RLIM_INFINITY else min(4096, hard)
+    if soft != resource.RLIM_INFINITY and soft < target:
+        try:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+        except (OSError, ValueError):
+            pass  # Keep working under an administrator-imposed limit.
+
+
 class CodexProcess:
     def __init__(self, runner=subprocess.run):
         self.runner = runner
 
     def run(self, args: list[str], *, proxy: str | None = None) -> int:
         try:
-            result = self.runner(command_for(require_binary("codex"), *args), env=connection_environment(proxy))
+            result = self.runner(codex_launch_command(require_binary("codex"), args), env=connection_environment(proxy))
             return result.returncode
         except KeyboardInterrupt:
             return 130

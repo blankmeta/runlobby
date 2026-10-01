@@ -30,6 +30,8 @@ elif args[0]=='switch':
             codex.write_text(f'''#!{sys.executable}
 import json,sys
 from pathlib import Path
+if sys.argv[1:]==['--help']:
+ print('Usage: codex --no-daemon');sys.exit(0)
 Path({str(directory / 'args.json')!r}).write_text(json.dumps(sys.argv[1:]))
 sys.exit(7)
 ''')
@@ -40,7 +42,7 @@ sys.exit(7)
                                     input="2\n", capture_output=True, text=True, env=env, timeout=10)
             self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
             self.assertEqual((directory / "selected").read_text(), "work")
-            self.assertEqual(json.loads((directory / "args.json").read_text()), ["exec", "an argument with spaces"])
+            self.assertEqual(json.loads((directory / "args.json").read_text()), ["--no-daemon", "exec", "an argument with spaces"])
             self.assertFalse(json.loads((directory / "app/settings.json").read_text())["proxy_enabled"])
 
     def test_new_install_creates_profile_binds_project_and_emits_json(self):
@@ -66,6 +68,8 @@ print(json.dumps({{"schema_version":1,"accounts":rows}}))
             codex.write_text(f'''#!{sys.executable}
 import json,os,sys
 from pathlib import Path
+if sys.argv[1:]==['--help']:
+ print('Usage: codex --no-daemon');sys.exit(0)
 home=Path(os.environ['CODEX_HOME'])
 if sys.argv[-1]=='login':
  (home/'auth.json').write_text('{{"synthetic":true}}')

@@ -2,7 +2,7 @@ from codex_switch.domain.errors import SwitchError
 from codex_switch.domain.profiles import validate_profile_arguments
 from codex_switch.domain.providers import CODEX
 from ..accounts import CodexAuth
-from ..processes import command_for, profile_environment, require_binary
+from ..processes import codex_launch_command, command_for, profile_environment, require_binary
 
 
 class CodexProvider:
@@ -28,8 +28,9 @@ class CodexProvider:
                            "-c", 'forced_login_method="chatgpt"', "login")
 
     def launch_command(self, home, args):
-        return command_for(self.binary or require_binary("codex"), "-c", 'cli_auth_credentials_store="file"',
-                           "-c", 'forced_login_method="chatgpt"', "-c", 'model_provider="openai"', *args)
+        return codex_launch_command(self.binary or require_binary("codex"),
+                                    ["-c", 'cli_auth_credentials_store="file"',
+                                     "-c", 'forced_login_method="chatgpt"', "-c", 'model_provider="openai"', *args])
 
     def validate_arguments(self, args):
         validate_profile_arguments(args)

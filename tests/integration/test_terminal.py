@@ -27,8 +27,10 @@ class TerminalJourneyTests(unittest.TestCase):
             seed(self.root, name)
         binary = self.root / "codex"
         binary.write_text(f'''#!{sys.executable}
-import os
+import os,sys
 from pathlib import Path
+if sys.argv[1:]==['--help']:
+ print('Usage: codex --no-daemon');sys.exit(0)
 print('CHILD_ACCOUNT=' + Path(os.environ['CODEX_HOME']).name, flush=True)
 ''')
         binary.chmod(0o755)

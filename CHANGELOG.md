@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2
+
+- Launch Codex without the shared background daemon for both original accounts and isolated profiles. Use `--no-daemon` when supported, and a file-credentials config override for older Codex versions that embed their server when CLI overrides are supplied. Reject remote-server overrides that would bypass account selection.
+- Raise the POSIX soft file-descriptor limit to 4096 when the existing hard limit allows it, without changing system-wide settings.
+- Reap PTY children after cancellation, escalating from hangup to terminate and kill when necessary. Make PTY cleanup idempotent so a second close cannot close a reused descriptor.
+
 ## 1.5.1
 
 - Add `rlb monitor on|off|status` and a persistent side-panel toggle in Settings. Turning it off bypasses the terminal renderer; toggling from the menu keeps keyboard focus on the setting.

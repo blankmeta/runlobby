@@ -130,8 +130,10 @@ class ProfileStorageTests(unittest.TestCase):
         for name in ("work", "personal"): seed(self.root, name)
         fake = self.root / "codex.py"
         fake.write_text(f'''#!{sys.executable}
-import os,time,json
+import os,time,json,sys
 from pathlib import Path
+if sys.argv[1:]==['--help']:
+ print('Usage: codex --no-daemon');sys.exit(0)
 home=Path(os.environ['CODEX_HOME'])
 assert os.environ['CODEX_SQLITE_HOME']==str(home)
 (home/'started').write_text(str(os.getpid()))

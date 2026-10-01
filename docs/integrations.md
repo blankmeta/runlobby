@@ -25,6 +25,17 @@ set -g status-right '#(cd #{q:pane_current_path} && runlobby status --line)'
 
 `runlobby` must be on the tmux server's PATH. The [tmux format modifier](https://man.openbsd.org/tmux#FORMATS) quotes the pane directory for the shell. This is an example configuration; automated tests cover status output, not tmux rendering.
 
+## Codex server lifetime
+
+Codex account launches bypass the shared background server: an existing app-server cannot
+replace the selected account with its cached credentials. This applies to both
+original accounts and isolated profiles, including resume. Newer Codex uses
+`--no-daemon`; older versions use a file-credentials CLI config override to select
+the embedded server. `--remote` is rejected
+in account launches because a remote server owns its own credentials; launch
+remote Codex directly instead. POSIX launches raise the local soft descriptor
+limit to 4096 when allowed by the existing hard limit. System-wide limits stay unchanged.
+
 ## JSON contract, version 1
 
 ```sh
